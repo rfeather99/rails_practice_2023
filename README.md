@@ -59,6 +59,7 @@
 - `rails new ./ --js esbuild --css sass`
 - dockerfile修正
 - docker-composeファイル作成
+- DB設定
 
 1. rubyいれる
 

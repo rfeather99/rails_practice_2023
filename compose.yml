@@ -2,9 +2,50 @@ version: '3'
 services:
   web:
     build: .
+    environment:
+      DB_HOST:     ${DB_HOST:-db}
+      DB_PORT:     ${DB_PORT:-3306}
+      DB_USER:     ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
     volumes:
       - .:/app
+      - /app/.bundle
+      - node_modules:/app/node_modules
+      - assert_builds:/app/assets/builds
+      - rails_cache:/app/tmp/cache
+      - /app/tmp/storage
+      - /app/tmp/pids
     ports:
       - "3000:3000"
     stdin_open: true
     tty: true
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - web
+
+  db:
+    image: library/mysql:8
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: mysqladmin ping -h localhost -u root -proot
+      interval: "1s"
+      retries: 30
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - db-storage:/var/lib/mysql
+    networks:
+      - web
+    ports:
+      - "3306:3306"
+
+volumes:
+  node_modules:
+  assert_builds:
+  rails_cache:
+  db-storage:
+
+networks:
+  web:

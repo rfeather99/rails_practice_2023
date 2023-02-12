@@ -7,17 +7,23 @@ RUN curl -sL https://deb.nodesource.com/setup_18.x | bash -
 RUN apt-get update -qq && apt-get install -y build-essential libvips nodejs && npm install -g yarn
 
 # Mount $PWD to this workdir
+COPY ./ /app
 WORKDIR /app
 
-# Ensure gems are installed on a persistent volume and available as bins
-RUN bundle config set --global path '/bundle'
-ENV PATH="/bundle/ruby/3.2.0/bin:${PATH}"
+RUN bundle config set app_config .bundle
+RUN bundle config set path .cache/bundle
+# mount cacheを利用する
+RUN --mount=type=cache,target=/app/.cache/bundle \
+    bundle install && \
+    mkdir -p vendor && \
+    cp -ar .cache/bundle /bundle
+RUN bundle config set path /bundle
 
-# Install Rails
-RUN gem install rails
+RUN --mount=type=cache,target=/app/.cache/node_modules \
+    yarn install --modules-folder .cache/node_modules && \
+    cp -ar .cache/node_modules node_modules
 
-# Ensure binding is always 0.0.0.0, even in development, to access server from outside container
-ENV BINDING="0.0.0.0"
+RUN --mount=type=cache,target=/app/tmp/cache bin/rails assets:precompile
 
-# Overwrite ruby image's entrypoint to provide open cli
-ENTRYPOINT [""]
+# 実行時にコマンド指定が無い場合に実行されるコマンド
+CMD ["bin/rails", "s", "-b", "0.0.0.0"]

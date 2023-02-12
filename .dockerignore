@@ -1,0 +1,7 @@
+.bundle
+.git
+assets/builds
+log
+node_modules
+tmp
+vender/bundle
